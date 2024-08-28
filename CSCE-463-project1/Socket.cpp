@@ -8,13 +8,28 @@
 #include <iostream>
 //#include <winsock.h>
 
+void Socket::updateSeenIps(const std::string& ip) {
+	this->seenIps.insert(ip);
+}
 
+void Socket::updateSeenHosts(const std::string& host) {
+	this->seenHosts.insert(host);
+}
+
+bool Socket::seenHost(const std::string& host) {
+	return this->seenHosts.contains(host);
+}
+
+bool Socket::seenIp(const std::string& ip) {
+	return this->seenHosts.contains(ip);
+}
 
 Socket::~Socket() {
 	delete[] buf;
 	Shutdown();
 }
 
+// socket class should always set sock to invalid_sock when done with it, never leave it dangling.
 Socket::Socket(int timeout)
 {
 	sock = INVALID_SOCKET;
@@ -24,9 +39,28 @@ Socket::Socket(int timeout)
 	curPos = 0;
 }
 
-bool Socket::Connect(const Url& url) {
-	if (sock != INVALID_SOCKET) // must shutdown old socket socket
+bool Socket::Connect(const Url& url, bool robotCheck) {
+	/*
+	If we are a robot we must check if we have already visited and printout such things
+	
+	else
+		we assume we are allowed to access the page
+	*/
+
+	if (sock != INVALID_SOCKET) {
+		this->Shutdown();
+	}
+
+	if (robotCheck && this->seenHost(url.host)) {
+		std::cout << "\t  Checking host uniqueness... failed" << std::endl;
 		return false;
+	}
+
+	this->updateSeenHosts(url.host);
+
+	if(robotCheck)
+		std::cout << "\t  Checking host uniqueness... passed" << std::endl;
+
 	sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (sock == INVALID_SOCKET) {
 		printf("socket() error %d\n", WSAGetLastError());
@@ -45,26 +79,43 @@ bool Socket::Connect(const Url& url) {
 	if (ipv4 != INADDR_NONE) {
 		server.sin_addr.s_addr = ipv4;
 	}
-	else {
+	else{
 		struct hostent* host;
 		if ((host = (hostent*)gethostbyname(url.host.c_str())) == nullptr) {
-			std::cout << "\t  Doing DNS... failed with " << WSAGetLastError() << std::endl;
+			if(robotCheck)
+				std::cout << "\t  Doing DNS... failed with " << WSAGetLastError() << std::endl;
 			return false;
 		}
 		server.sin_addr = *((struct in_addr*)host->h_addr_list[0]);
 	}
+
+	std::string ip = inet_ntoa(server.sin_addr);
+
+	server.sin_port = htons(url.port);
+
 	clock_t dnsEnd = clock();
 
 	double dnsElapsed = (double)(dnsEnd - dnsStart) / CLOCKS_PER_SEC;
 
-	std::cout << "\t  Doing DNS... " << "done in " << dnsElapsed * 1000 << " ms, " << "found " << inet_ntoa(server.sin_addr) << std::endl;
+	if(robotCheck)
+		std::cout << "\t  Doing DNS... " << "done in " << dnsElapsed * 1000 << " ms, " << "found " << inet_ntoa(server.sin_addr) << std::endl;
 
-	server.sin_port = htons(url.port);
+	if (robotCheck && this->seenIp(ip)) {
+		std::cout << "\t  Checking IP uniqueness... failed" << std::endl;
+		return false;
+	}
+	if (robotCheck)
+		std::cout << "\t  Checking IP uniqueness... passed" << std::endl;
+
+	this->updateSeenIps(ip);
 
 	clock_t connStart = clock();
 
 	if (connect(sock, (struct sockaddr*)&server, sizeof(struct sockaddr_in)) == SOCKET_ERROR) {
-		std::cout << "\t* Connecting on page... failed with " << WSAGetLastError() << std::endl;
+		if(robotCheck)
+			std::cout << "\t* Connecting on robots... failed with " << WSAGetLastError() << std::endl;
+		else
+			std::cout << "\t* Connecting on page... failed with " << WSAGetLastError() << std::endl;
 		return false;
 	}
 
@@ -72,17 +123,26 @@ bool Socket::Connect(const Url& url) {
 
 	double connElapsed = (double)(connEnd - connStart) / CLOCKS_PER_SEC;
 
-
 	// send get request
-	std::string sendBuf = "GET " + url.path + url.query + " HTTP/1.0\r\nUser-Agent: myTamuCrawler/1.0\r\nHost: " + url.host + "\r\nConnection: close\r\n\r\n";
-
+	std::string urlAndPath = robotCheck ? "/robots.txt" : url.path + url.query;
+	std::string reqType = robotCheck ? "HEAD" : "GET";
+	std::string sendBuf = reqType + " " + urlAndPath + " " + "HTTP/1.0\r\nUser-Agent: myTamuCrawler/1.0\r\nHost:" + " " + url.host + "\r\nConnection: close\r\n\r\n";
+	
 	if (send(sock, sendBuf.c_str(), sendBuf.length(), 0) == SOCKET_ERROR)
 	{
-		std::cout << "\t* Connecting on page... failed with " << WSAGetLastError() << "ms" << std::endl;
+		if (robotCheck)
+			std::cout << "\t* Connecting on robots... failed with " << WSAGetLastError() << std::endl;
+		else
+			std::cout << "\t* Connecting on page... failed with " << WSAGetLastError() << std::endl;
 		return false;
 	}
 
-	std::cout << "\t* Connecting on page... done in " << connElapsed * 1000 << " ms" << std::endl;
+	if (robotCheck)
+		std::cout << "\t  Connecting on robots... done in " << connElapsed * 1000 << " ms" << std::endl;
+	else
+		std::cout << "\t* Connecting on page... done in " << connElapsed * 1000 << " ms" << std::endl;
+
+
 
 	return true;
 
@@ -148,16 +208,19 @@ bool Socket::Read(void)
 
 	}
 
-
 	return false;
 }
 
 void Socket::Shutdown() {
-	if (sock == INVALID_SOCKET) return;
+	// prevent shutting down null / nonexistant sockets
+	if (sock == INVALID_SOCKET)
+		return;
 
 	if (closesocket(sock) == SOCKET_ERROR) {
 		if (WSACleanup() == SOCKET_ERROR) {
-			exit(1);
+			std::cout << "close socket failed: "<< WSAGetLastError() << std::endl;
+			exit(5);
 		}
 	}
+	sock = INVALID_SOCKET;
 }
