@@ -38,7 +38,7 @@ std::pair<std::vector<std::string>, std::string> getParsedResponse(const Socket&
 }
 
 
-bool sendRequest(bool robotCheck, std::string rawUrl, const Url& url, Socket& s) {
+bool sendSocketRequest(Socket& s, const Url& url, bool robotCheck, int maxRead) {
 
     if (url.scheme == "") return false;
 
@@ -46,7 +46,7 @@ bool sendRequest(bool robotCheck, std::string rawUrl, const Url& url, Socket& s)
 
     if (!connected) return false;
 
-    int validSocketRead = s.Read();
+    int validSocketRead = s.Read(maxRead);
 
     if (!validSocketRead) return false;
 
@@ -80,7 +80,7 @@ bool sendRequest(bool robotCheck, std::string rawUrl, const Url& url, Socket& s)
 
     clock_t start = clock();
 
-    const char* rawUrlCopy = rawUrl.c_str();
+    const char* rawUrlCopy = url.rawUrl.c_str();
 
     char* linkBuffer = parser->Parse((char*)response.second.c_str(), response.second.length(), (char*)rawUrlCopy, (int)strlen(rawUrlCopy), &nLinks);
 
@@ -154,10 +154,12 @@ int main(int argc, char* argv[])
             Url url = p.parse(rawUrl);
 
 
-            if (sendRequest(true, rawUrl, url, s)) {
+            if (sendSocketRequest(s, url, true, 16*1024)) {
                 // download the page request
-                sendRequest(false, rawUrl, url, s);
+                s.Shutdown();
+                sendSocketRequest(s, url, false, 40000);
             }
+            s.Shutdown();
         }
     }
 

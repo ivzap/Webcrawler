@@ -8,8 +8,8 @@
 #include <ctime>
 #include <unordered_set>
 
-#define INITIAL_BUF_SIZE 1024
-#define THRESHHOLD 100
+#define INITIAL_BUF_SIZE 5
+#define THRESHHOLD 1
 class Socket {
 public:
 	Socket(int timeout);
@@ -25,7 +25,7 @@ public:
 	void updateSeenIps(const std::string& ip);
 	bool seenHost(const std::string& host);
 	bool seenIp(const std::string& ip);
-	bool Read(void);
+	bool Read(int maxRead);
 	bool Connect(const Url& url, bool robotCheck);
 	void Shutdown();
 
