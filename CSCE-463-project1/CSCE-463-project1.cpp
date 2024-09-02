@@ -157,7 +157,9 @@ int main(int argc, char* argv[])
             if (sendRequest(true, rawUrl, url, s)) {
                 // download the page request
                 sendRequest(false, rawUrl, url, s);
+                s.Shutdown();
             }
+            s.Shutdown();
         }
     }
 

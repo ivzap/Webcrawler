@@ -8,8 +8,8 @@
 #include <ctime>
 #include <unordered_set>
 
-#define INITIAL_BUF_SIZE 1024
-#define THRESHHOLD 100
+#define INITIAL_BUF_SIZE 1000
+#define THRESHHOLD 10000
 class Socket {
 public:
 	Socket(int timeout);

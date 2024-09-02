@@ -39,16 +39,32 @@ Socket::Socket(int timeout)
 	curPos = 0;
 }
 
+/*
+	Why not have a DNS lookup table?
+	- user wants to webcrawl
+		> make head request
+			if allowed to connect via /robots.txt
+				make http request
+
+*/
+
 bool Socket::Connect(const Url& url, bool robotCheck) {
-	/*
-	If we are a robot we must check if we have already visited and printout such things
-	
-	else
-		we assume we are allowed to access the page
-	*/
+	// if we reuse object dont let buffer grow to inf
+	if (allocatedSize > 32 * 1024) {
+		std::cout << "Buffer exceeded 32KB, resizing to original size..." << std::endl;
+		void* newBuf = realloc(buf, INITIAL_BUF_SIZE);
+		if (newBuf == nullptr) {
+			std::cout << "WARNING: realloc failed in Connect()" << std::endl;
+			return false;
+		}
+
+		buf = (char*)newBuf;
+
+	}
 
 	if (sock != INVALID_SOCKET) {
-		this->Shutdown();
+		std::cout << "WARNING: canceling connection... shutdown socket before reusing to avoid resource leaks" << std::endl;
+		return false;
 	}
 
 	if (robotCheck && this->seenHost(url.host)) {
@@ -113,7 +129,7 @@ bool Socket::Connect(const Url& url, bool robotCheck) {
 
 	if (connect(sock, (struct sockaddr*)&server, sizeof(struct sockaddr_in)) == SOCKET_ERROR) {
 		if(robotCheck)
-			std::cout << "\t* Connecting on robots... failed with " << WSAGetLastError() << std::endl;
+			std::cout << "\t  Connecting on robots... failed with " << WSAGetLastError() << std::endl;
 		else
 			std::cout << "\t* Connecting on page... failed with " << WSAGetLastError() << std::endl;
 		return false;
@@ -131,7 +147,7 @@ bool Socket::Connect(const Url& url, bool robotCheck) {
 	if (send(sock, sendBuf.c_str(), sendBuf.length(), 0) == SOCKET_ERROR)
 	{
 		if (robotCheck)
-			std::cout << "\t* Connecting on robots... failed with " << WSAGetLastError() << std::endl;
+			std::cout << "\t  Connecting on robots... failed with " << WSAGetLastError() << std::endl;
 		else
 			std::cout << "\t* Connecting on page... failed with " << WSAGetLastError() << std::endl;
 		return false;

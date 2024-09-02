@@ -87,7 +87,7 @@ public:
 		url.path = urlElements[3].length() ? urlElements[3] : "/";
 		url.fragment = urlElements[1];
 
-		std::cout << "\t  Parsing URL... host " << url.host << ", port " << url.port << ", request " << url.path + url.query << std::endl;
+		std::cout << "\t  Parsing URL... host " << url.host << ", port " << url.port << std::endl;
 
 		return url;
 
