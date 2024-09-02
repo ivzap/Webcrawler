@@ -25,7 +25,7 @@ public:
 	void updateSeenIps(const std::string& ip);
 	bool seenHost(const std::string& host);
 	bool seenIp(const std::string& ip);
-	bool Read(void);
+	bool Read(int maxRead);
 	bool Connect(const Url& url, bool robotCheck);
 	void Shutdown();
 

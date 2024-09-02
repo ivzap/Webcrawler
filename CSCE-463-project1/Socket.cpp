@@ -4,7 +4,7 @@
 #include "pch.h"
 #include "Socket.h"
 #include "Url.h"
-
+#include <synchapi.h>
 #include <iostream>
 //#include <winsock.h>
 
@@ -63,8 +63,7 @@ bool Socket::Connect(const Url& url, bool robotCheck) {
 	}
 
 	if (sock != INVALID_SOCKET) {
-		std::cout << "WARNING: canceling connection... shutdown socket before reusing to avoid resource leaks" << std::endl;
-		return false;
+		this->Shutdown();
 	}
 
 	if (robotCheck && this->seenHost(url.host)) {
@@ -164,7 +163,7 @@ bool Socket::Connect(const Url& url, bool robotCheck) {
 
 }
 
-bool Socket::Read(void)
+bool Socket::Read(int maxRead)
 {
 	fd_set fds;
 
@@ -187,6 +186,17 @@ bool Socket::Read(void)
 		{
 			// new data available; now read the next segment
 			int bytes = recv(sock, buf + curPos, allocatedSize - curPos, 0);
+			// have we exceeded our total time limit
+			double totalTime = double(clock() - start) / CLOCKS_PER_SEC;
+			if (totalTime > this->timeout) {
+				std::cout << "\t  Loading... failed with slow download" << std::endl;
+				return false;
+			}
+			// have we exceeded our max limit?
+			if (curPos > maxRead) {
+				std::cout << "\t  Loading... failed with exceeding max" << std::endl;
+				return false;
+			}
 			if (bytes == SOCKET_ERROR) {
 				std::cout << "\t  Loading... failed with " << WSAGetLastError() << " on recv" << std::endl;
 				return false;

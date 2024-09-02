@@ -12,4 +12,5 @@ struct Url {
 	std::string path;
 	std::string query;
 	std::string fragment;
+	std::string rawUrl;
 };
