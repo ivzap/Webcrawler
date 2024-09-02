@@ -91,10 +91,10 @@ bool sendSocketRequest(Socket& s, const Url& url, bool robotCheck, int maxRead) 
     clock_t end = clock();
 
     std::cout << "\t+ Parsing page... done in " << (double)(end - start) / CLOCKS_PER_SEC * 1000 << " ms with " << nLinks << " links" << std::endl;
-    std::cout << "----------------------------------------" << std::endl;
+    /*std::cout << "----------------------------------------" << std::endl;
     for (auto str : response.first) {
         std::cout << str << std::endl;
-    }
+    }*/
 
     return true;
 }
@@ -157,7 +157,7 @@ int main(int argc, char* argv[])
             if (sendSocketRequest(s, url, true, 16*1024)) {
                 // download the page request
                 s.Shutdown();
-                sendSocketRequest(s, url, false, 40000);
+                sendSocketRequest(s, url, false, 2*1000*1024);
             }
             s.Shutdown();
         }

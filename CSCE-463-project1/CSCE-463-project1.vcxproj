@@ -144,6 +144,8 @@
     <ClInclude Include="UrlParser.h" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="out.txt" />
+    <Text Include="sol_out.txt" />
     <Text Include="urls.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

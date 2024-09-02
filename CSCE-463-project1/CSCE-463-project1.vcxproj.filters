@@ -44,5 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="urls.txt" />
+    <Text Include="out.txt" />
+    <Text Include="sol_out.txt" />
   </ItemGroup>
 </Project>

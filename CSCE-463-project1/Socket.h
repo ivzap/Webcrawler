@@ -8,7 +8,7 @@
 #include <ctime>
 #include <unordered_set>
 
-#define INITIAL_BUF_SIZE 1000
+#define INITIAL_BUF_SIZE 10000
 #define THRESHHOLD 10000
 class Socket {
 public:

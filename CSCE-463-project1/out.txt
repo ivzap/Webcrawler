@@ -1,0 +1,189 @@
+Opened urls.txt with size 1384 bytes
+URL: http://www.symantec.com/verisign/ssl-certificates
+          Parsing URL... host www.symantec.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 51 ms, found 104.18.37.111
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 5 ms
+          Loading... done in 16 ms with 554 bytes
+          Verifying header... status code 301
+URL: http://amti.csis.org/category/taiwan/
+          Parsing URL... host amti.csis.org, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 15 ms, found 104.197.129.166
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 27 ms
+          Loading... done in 28 ms with 462 bytes
+          Verifying header... status code 200
+URL: http://www.weatherline.net/
+          Parsing URL... host www.weatherline.net, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 8 ms, found 104.21.62.73
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 11 ms
+          Loading... done in 30 ms with 660 bytes
+          Verifying header... status code 301
+URL: http://ace.wikipedia.org/wiki/%C3%94n_Keu%C3%AB
+          Parsing URL... host ace.wikipedia.org, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 1 ms, found 208.80.153.224
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 24 ms
+          Loading... done in 24 ms with 183 bytes
+          Verifying header... status code 301
+URL: http://as.com/baloncesto/2015/01/01/euroliga/1420149317_950099.html
+          Parsing URL... host as.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 48 ms, found 23.38.189.201
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 5 ms
+          Loading... done in 14 ms with 884 bytes
+          Verifying header... status code 301
+URL: http://www.emirates.com/
+          Parsing URL... host www.emirates.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 10 ms, found 96.7.161.220
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 4 ms
+          Loading... done in 19 ms with 293 bytes
+          Verifying header... status code 301
+URL: http://animalresearch.wisc.edu/?attachment_id=719
+          Parsing URL... host animalresearch.wisc.edu, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 0 ms, found 128.104.144.136
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 35 ms
+          Loading... done in 36 ms with 269 bytes
+          Verifying header... status code 301
+URL: http://allybruener.com/
+          Parsing URL... host allybruener.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 0 ms, found 50.63.19.34
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 39 ms
+          Loading... done in 54 ms with 292 bytes
+          Verifying header... status code 500
+URL: http://youtube.com/user/USIMLS
+          Parsing URL... host youtube.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 0 ms, found 142.250.114.190
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 5 ms
+          Loading... done in 7 ms with 377 bytes
+          Verifying header... status code 301
+URL: http://agitprop.typepad.com/agitprop/the-power-of-the-lord/
+          Parsing URL... host agitprop.typepad.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 7 ms, found 104.18.117.121
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 5 ms
+          Loading... done in 28 ms with 553 bytes
+          Verifying header... status code 301
+URL: http://av.voanews.com/Videoroot/Pangeavideo/2014/12/f/fc/fc287671-d5f7-443b-b6dd-9b2e48b57c79_hq.mp4?download=1
+          Parsing URL... host av.voanews.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 78 ms, found 23.203.83.50
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 4 ms
+          Loading... done in 15 ms with 287 bytes
+          Verifying header... status code 301
+URL: http://ask.arabnews.com/question/effect-emergency-vacation-contract-period/99476/law-labor
+          Parsing URL... host ask.arabnews.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... failed with 11001
+URL: http://archive.wired.com/culture/?page=16
+          Parsing URL... host archive.wired.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 10 ms, found 146.75.105.72
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 5 ms
+          Loading... done in 5 ms with 576 bytes
+          Verifying header... status code 301
+URL: http://aburningpatience.blogspot.com/2012_01_01_archive.html
+          Parsing URL... host aburningpatience.blogspot.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 12 ms, found 142.250.115.132
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 6 ms
+          Loading... done in 23 ms with 392 bytes
+          Verifying header... status code 200
+URL: http://atr.rollcall.com/category/race-ratings/likely-republican/
+          Parsing URL... host atr.rollcall.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 0 ms, found 63.251.90.9
+          Checking IP uniqueness... passed
+          Connecting on robots... failed with 10060
+URL: http://arabic.cnn.com/business/2014/06/11/money-toyota-recall
+          Parsing URL... host arabic.cnn.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 10 ms, found 146.75.107.5
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 4 ms
+          Loading... done in 5 ms with 593 bytes
+          Verifying header... status code 301
+URL: http://alumniconnect.wagner.edu/give
+          Parsing URL... host alumniconnect.wagner.edu, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 212 ms, found 216.235.200.34
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 48 ms
+          Loading... done in 52 ms with 450 bytes
+          Verifying header... status code 404
+        * Connecting on page... done in 48 ms
+          Loading... done in 71 ms with 675 bytes
+          Verifying header... status code 301
+URL: http://advanced.jhu.edu/academics/graduate-degree-programs/museum-studies/
+          Parsing URL... host advanced.jhu.edu, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 7 ms, found 104.18.40.111
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 6 ms
+          Loading... done in 236 ms with 567 bytes
+          Verifying header... status code 301
+URL: http://10plate.blog44.fc2.com/
+          Parsing URL... host 10plate.blog44.fc2.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 27 ms, found 199.48.210.116
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 45 ms
+          Loading... done in 69 ms with 196 bytes
+          Verifying header... status code 200
+URL: http://4somaliwomen.com/index.php/component/content/article/1/937
+          Parsing URL... host 4somaliwomen.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... failed with 11004
+URL: http://agrumer.livejournal.com/493956.html?title=Ello&hashtags=&text=For%20those%20trying%20out%20Ello,%20%20I%E2%80%99m%20there%20as%20avram.
+          Parsing URL... host agrumer.livejournal.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 154 ms, found 81.19.74.1
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 148 ms
+          Loading... done in 150 ms with 483 bytes
+          Verifying header... status code 301
+URL: http://abigvictory.blogspot.com/search/label/Fluid
+          Parsing URL... host abigvictory.blogspot.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 12 ms, found 142.250.115.132
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 6 ms
+          Loading... done in 63 ms with 392 bytes
+          Verifying header... status code 200
+URL: http://abriluno.com/doll-brothels-are-coming-to-a-city-near-you/
+          Parsing URL... host abriluno.com, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 12 ms, found 52.86.6.113
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 36 ms
+          Loading... done in 35 ms with 105 bytes
+          Verifying header... status code 404
+        * Connecting on page... done in 36 ms
+          Loading... done in 35 ms with 170 bytes
+          Verifying header... status code 302
+URL: http://balkans.aljazeera.net/misljenja
+          Parsing URL... host balkans.aljazeera.net, port 80, request
+          Checking host uniqueness... passed
+          Doing DNS... done in 10 ms, found 173.223.200.40
+          Checking IP uniqueness... passed
+          Connecting on robots... done in 4 ms
+          Loading... done in 12 ms with 182 bytes
+          Verifying header... status code 301

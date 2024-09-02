@@ -171,12 +171,12 @@ bool Socket::Read(int maxRead)
 	timeout.tv_sec = this->timeout;
 	timeout.tv_usec = 0;
 
-	clock_t start = clock();
+	
 
 	curPos = 0; // reset to start of buffer.
 	while (true)
 	{
-
+		clock_t start = clock();
 		// reset socket set since select modifies inputs
 
 		FD_ZERO(&fds);
@@ -187,11 +187,11 @@ bool Socket::Read(int maxRead)
 			// new data available; now read the next segment
 			int bytes = recv(sock, buf + curPos, allocatedSize - curPos, 0);
 			// have we exceeded our total time limit
-			double totalTime = double(clock() - start) / CLOCKS_PER_SEC;
+			/*double totalTime = double(clock() - start) / CLOCKS_PER_SEC;
 			if (totalTime > this->timeout) {
 				std::cout << "\t  Loading... failed with slow download" << std::endl;
 				return false;
-			}
+			}*/
 			// have we exceeded our max limit?
 			if (curPos > maxRead) {
 				std::cout << "\t  Loading... failed with exceeding max" << std::endl;
@@ -221,10 +221,26 @@ bool Socket::Read(int maxRead)
 				buf = (char*)newBuf;
 				allocatedSize += THRESHHOLD;
 			}
+			// adjust the timeout param by the time elapsed
+			double remainingTimeoutSec = timeout.tv_sec + (double)timeout.tv_usec / 1e6;
+
+			double elapsedTimeSec = (double)(clock() - start) / CLOCKS_PER_SEC;
+			
+			remainingTimeoutSec = max(0, remainingTimeoutSec-elapsedTimeSec);
+
+			double remainingSec;
+
+			long remainingUs = modf(remainingTimeoutSec, &remainingSec) * 1e6;
+			timeout.tv_usec = (long)remainingUs;
+			timeout.tv_sec = remainingSec;
 		}
 		else if (ret == 0) {
-			// report timeout
-			std::cout << "\t  Loading... failed with timeout" << std::endl;
+			// report timeout or slow download
+			if(curPos > 0)
+				std::cout << "\t  Loading... failed with slow download" << std::endl;
+			else
+				std::cout << "\t  Loading... failed with timeout" << std::endl;
+
 			return false;
 		}
 		else {
