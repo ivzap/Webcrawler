@@ -39,19 +39,10 @@ Socket::Socket(int timeout)
 	curPos = 0;
 }
 
-/*
-	Why not have a DNS lookup table?
-	- user wants to webcrawl
-		> make head request
-			if allowed to connect via /robots.txt
-				make http request
-
-*/
-
 bool Socket::Connect(const Url& url, bool robotCheck) {
 	// if we reuse object dont let buffer grow to inf
-	if (allocatedSize > 32 * 1024) {
-		std::cout << "Buffer exceeded 32KB, resizing to original size..." << std::endl;
+	if (allocatedSize > 32*1024) {
+		//std::cout << "Buffer exceeded 32KB, resizing to original size..." << std::endl;
 		void* newBuf = realloc(buf, INITIAL_BUF_SIZE);
 		if (newBuf == nullptr) {
 			std::cout << "WARNING: realloc failed in Connect()" << std::endl;
@@ -186,12 +177,7 @@ bool Socket::Read(int maxRead)
 		{
 			// new data available; now read the next segment
 			int bytes = recv(sock, buf + curPos, allocatedSize - curPos, 0);
-			// have we exceeded our total time limit
-			/*double totalTime = double(clock() - start) / CLOCKS_PER_SEC;
-			if (totalTime > this->timeout) {
-				std::cout << "\t  Loading... failed with slow download" << std::endl;
-				return false;
-			}*/
+			
 			// have we exceeded our max limit?
 			if (curPos > maxRead) {
 				std::cout << "\t  Loading... failed with exceeding max" << std::endl;

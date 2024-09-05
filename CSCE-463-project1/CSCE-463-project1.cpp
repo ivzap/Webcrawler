@@ -103,17 +103,19 @@ bool sendSocketRequest(Socket& s, const Url& url, bool robotCheck, int maxRead) 
 int main(int argc, char* argv[])
 {
 
+    
+
+    if (argc != 3) {
+        std::cout << "Usage: " << argv[0] << " <number of threads> <urls filename>" << std::endl;
+        return 0;
+    }
+
     WSADATA wsaData;
     WORD wVersionRequested = MAKEWORD(2, 2);
     if (WSAStartup(wVersionRequested, &wsaData) != 0)
     {
         printf("WSAStartup error %d\n", WSAGetLastError());
         exit(-1);
-    }
-
-    if (argc != 3) {
-        std::cout << "Usage: " << argv[0] << " <number of threads> <urls filename>" << std::endl;
-        return 0;
     }
 
     std::fstream urlsFile(argv[2], std::ios::in);
@@ -157,7 +159,7 @@ int main(int argc, char* argv[])
             if (sendSocketRequest(s, url, true, 16*1024)) {
                 // download the page request
                 s.Shutdown();
-                sendSocketRequest(s, url, false, 2*1000*1024);
+                sendSocketRequest(s, url, false, 2097152);
             }
             s.Shutdown();
         }
