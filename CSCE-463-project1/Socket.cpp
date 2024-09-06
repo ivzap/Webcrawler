@@ -8,30 +8,15 @@
 #include <iostream>
 //#include <winsock.h>
 
-void Socket::updateSeenIps(const std::string& ip) {
-	this->seenIps.insert(ip);
-}
-
-void Socket::updateSeenHosts(const std::string& host) {
-	this->seenHosts.insert(host);
-}
-
-bool Socket::seenHost(const std::string& host) {
-	return this->seenHosts.contains(host);
-}
-
-bool Socket::seenIp(const std::string& ip) {
-	return this->seenHosts.contains(ip);
-}
-
 Socket::~Socket() {
 	delete[] buf;
 	Shutdown();
 }
 
 // socket class should always set sock to invalid_sock when done with it, never leave it dangling.
-Socket::Socket(int timeout)
+Socket::Socket(int timeout, Crawler* crawler)
 {
+	this->crawler = crawler;
 	sock = INVALID_SOCKET;
 	buf = new char[INITIAL_BUF_SIZE];
 	allocatedSize = INITIAL_BUF_SIZE;
@@ -39,13 +24,13 @@ Socket::Socket(int timeout)
 	curPos = 0;
 }
 
-bool Socket::Connect(const Url& url, bool robotCheck) {
+// id is the thread id currently from the crawler
+bool Socket::Connect(const Url& url, bool robotCheck, const int id) {
 	// if we reuse object dont let buffer grow to inf
-	if (allocatedSize > 32*1024) {
+	if (allocatedSize > 32 * 1024) {
 		//std::cout << "Buffer exceeded 32KB, resizing to original size..." << std::endl;
 		void* newBuf = realloc(buf, INITIAL_BUF_SIZE);
 		if (newBuf == nullptr) {
-			std::cout << "WARNING: realloc failed in Connect()" << std::endl;
 			return false;
 		}
 
@@ -57,19 +42,23 @@ bool Socket::Connect(const Url& url, bool robotCheck) {
 		this->Shutdown();
 	}
 
-	if (robotCheck && this->seenHost(url.host)) {
-		std::cout << "\t  Checking host uniqueness... failed" << std::endl;
-		return false;
+	if(robotCheck)
+	{
+
+		std::unique_lock<std::mutex> lock(crawler->statsMtx);
+		if (crawler->seenHost(url.host)) {
+			return false;
+		}
+		crawler->updateSeenHosts(url.host);
+		crawler->uniqueHostPassed[id]++;
 	}
 
-	this->updateSeenHosts(url.host);
-
-	if(robotCheck)
-		std::cout << "\t  Checking host uniqueness... passed" << std::endl;
+	if (robotCheck) {
+		// host uniqueness passed, increment unique hosts counter
+	}
 
 	sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (sock == INVALID_SOCKET) {
-		printf("socket() error %d\n", WSAGetLastError());
 		return false;
 	}
 
@@ -88,8 +77,7 @@ bool Socket::Connect(const Url& url, bool robotCheck) {
 	else{
 		struct hostent* host;
 		if ((host = (hostent*)gethostbyname(url.host.c_str())) == nullptr) {
-			if(robotCheck)
-				std::cout << "\t  Doing DNS... failed with " << WSAGetLastError() << std::endl;
+			
 			return false;
 		}
 		server.sin_addr = *((struct in_addr*)host->h_addr_list[0]);
@@ -103,25 +91,24 @@ bool Socket::Connect(const Url& url, bool robotCheck) {
 
 	double dnsElapsed = (double)(dnsEnd - dnsStart) / CLOCKS_PER_SEC;
 
-	if(robotCheck)
-		std::cout << "\t  Doing DNS... " << "done in " << dnsElapsed * 1000 << " ms, " << "found " << inet_ntoa(server.sin_addr) << std::endl;
-
-	if (robotCheck && this->seenIp(ip)) {
-		std::cout << "\t  Checking IP uniqueness... failed" << std::endl;
+	if (robotCheck && crawler->seenIp(ip)) {
 		return false;
 	}
-	if (robotCheck)
-		std::cout << "\t  Checking IP uniqueness... passed" << std::endl;
+	if (robotCheck) {
+		// ip uniqueness passed, update counter
+	}
 
-	this->updateSeenIps(ip);
+	//crawler->updateSeenIps(ip);
 
 	clock_t connStart = clock();
 
 	if (connect(sock, (struct sockaddr*)&server, sizeof(struct sockaddr_in)) == SOCKET_ERROR) {
-		if(robotCheck)
-			std::cout << "\t  Connecting on robots... failed with " << WSAGetLastError() << std::endl;
-		else
-			std::cout << "\t* Connecting on page... failed with " << WSAGetLastError() << std::endl;
+		if (robotCheck) {
+			// robot connection failed
+		}
+		else {
+			// regular connection failed
+		}
 		return false;
 	}
 
@@ -136,25 +123,20 @@ bool Socket::Connect(const Url& url, bool robotCheck) {
 	
 	if (send(sock, sendBuf.c_str(), sendBuf.length(), 0) == SOCKET_ERROR)
 	{
-		if (robotCheck)
-			std::cout << "\t  Connecting on robots... failed with " << WSAGetLastError() << std::endl;
-		else
-			std::cout << "\t* Connecting on page... failed with " << WSAGetLastError() << std::endl;
+		if (robotCheck) {
+			// connecting on robots failed
+		}
+		else {
+			// normal page conection failed
+		}
 		return false;
 	}
-
-	if (robotCheck)
-		std::cout << "\t  Connecting on robots... done in " << connElapsed * 1000 << " ms" << std::endl;
-	else
-		std::cout << "\t* Connecting on page... done in " << connElapsed * 1000 << " ms" << std::endl;
-
-
 
 	return true;
 
 }
 
-bool Socket::Read(int maxRead)
+bool Socket::Read(int maxRead, const int id)
 {
 	fd_set fds;
 
@@ -180,28 +162,23 @@ bool Socket::Read(int maxRead)
 			
 			// have we exceeded our max limit?
 			if (curPos > maxRead) {
-				std::cout << "\t  Loading... failed with exceeding max" << std::endl;
 				return false;
 			}
 			if (bytes == SOCKET_ERROR) {
-				std::cout << "\t  Loading... failed with " << WSAGetLastError() << " on recv" << std::endl;
 				return false;
 			}
 			if (bytes == 0) {
 				buf[curPos] = '\0';
 				// verify valid http(HTTP/) response
 				if (strncmp(buf, "HTTP/", 5) != 0) {
-					std::cout << "\t  Loading... " << "failed with non-HTTP header (does not begin with HTTP/)" << std::endl;
 					return false;
 				}
-				std::cout << "\t  Loading... done in " << (double)(clock() - start) / CLOCKS_PER_SEC * 1000 << " ms with " << curPos << " bytes" << std::endl;
 				return true; // normal completion
 			}
 			curPos += bytes; // adjust where the next recv goes
 			if (allocatedSize - curPos < THRESHHOLD) { // always require 1000 extra bytes, performance sensitive here!
 				void* newBuf = realloc(buf, allocatedSize + THRESHHOLD);
 				if (newBuf == nullptr) {
-					std::cout << "\t  Loading... failed on realloc" << std::endl;
 					return false; // RAII will free buffer
 				}
 				buf = (char*)newBuf;
@@ -222,15 +199,16 @@ bool Socket::Read(int maxRead)
 		}
 		else if (ret == 0) {
 			// report timeout or slow download
-			if(curPos > 0)
-				std::cout << "\t  Loading... failed with slow download" << std::endl;
-			else
-				std::cout << "\t  Loading... failed with timeout" << std::endl;
+			if (curPos > 0) {
+				// slow download
+			}
+			else {
+				// timeout
+			}
 
 			return false;
 		}
 		else {
-			std::cout << "\t  Loading... failed with " << WSAGetLastError() << " on select" << std::endl;
 			return false;
 		}
 

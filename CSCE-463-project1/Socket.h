@@ -7,12 +7,13 @@
 #include "Url.h"
 #include <ctime>
 #include <unordered_set>
+#include "Crawler.h"
 
 #define INITIAL_BUF_SIZE 10000
 #define THRESHHOLD 10000
 class Socket {
 public:
-	Socket(int timeout);
+	Socket(int timeout, Crawler* crawler);
 	~Socket();
 	SOCKET sock; // socket handle
 	
@@ -21,17 +22,12 @@ public:
 	int curPos; // current position in buffer
 	int timeout;
 
-	void updateSeenHosts(const std::string& host);
-	void updateSeenIps(const std::string& ip);
-	bool seenHost(const std::string& host);
-	bool seenIp(const std::string& ip);
-	bool Read(int maxRead);
-	bool Connect(const Url& url, bool robotCheck);
+	bool Read(int maxRead, const int id);
+	bool Connect(const Url& url, bool robotCheck, const int id);
 	void Shutdown();
 
 	private:
-		std::unordered_set<std::string> seenHosts;
-		std::unordered_set<std::string> seenIps;
-
+		Crawler* crawler;
+	
 
 };

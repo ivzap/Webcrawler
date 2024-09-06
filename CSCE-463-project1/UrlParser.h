@@ -35,7 +35,6 @@ public:
 
 		// Verify scheme
 		if (scheme != "http"){
-			std::cout << "\t  Parsing URL... failed with invalid scheme" << std::endl;
 			return Url{"", "", -1, "", "", ""};
 		}
 
@@ -73,7 +72,6 @@ public:
 
 		// Verify port
 		if (!(1 <= port && port <= 65535)) {
-			std::cout << "\t  Parsing URL... failed with invalid port" << std::endl;
 			return Url{"", "", -1, "", "", "" };
 		}
 
@@ -87,7 +85,6 @@ public:
 		url.path = urlElements[3].length() ? urlElements[3] : "/";
 		url.fragment = urlElements[1];
 		url.rawUrl = rawUrl;
-		std::cout << "\t  Parsing URL... host " << url.host << ", port " << url.port << std::endl;
 
 		return url;
 

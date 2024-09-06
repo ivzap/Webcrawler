@@ -132,11 +132,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Crawler.cpp" />
     <ClCompile Include="CSCE-463-project1.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Socket.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Crawler.h" />
     <ClInclude Include="HTMLParserBase.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Socket.h" />

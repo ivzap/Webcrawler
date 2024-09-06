@@ -15,96 +15,89 @@
 #include <filesystem>
 #include <unordered_set>
 
-std::pair<std::vector<std::string>, std::string> getParsedResponse(const Socket& s) {
-    std::vector<std::string> header;
-    int i = 0;
-    for (; i < s.curPos; i += 2) {
-        std::string line;
-        while (i < s.curPos && s.buf[i] != '\r') {
-            line += s.buf[i++];
-        }
-        if (line.length() == 0) break;
+//std::pair<std::vector<std::string>, std::string> getParsedResponse(const Socket& s) {
+//    std::vector<std::string> header;
+//    int i = 0;
+//    for (; i < s.curPos; i += 2) {
+//        std::string line;
+//        while (i < s.curPos && s.buf[i] != '\r') {
+//            line += s.buf[i++];
+//        }
+//        if (line.length() == 0) break;
+//
+//        header.push_back(line);
+//    }
+//    // remove any leading \r\n to the html.
+//    while (i < s.curPos && (s.buf[i] == '\r' || s.buf[i] == '\n')) i++;
+//
+//    std::string html;
+//    for (; i < s.curPos; i++) {
+//        html += s.buf[i];
+//    }
+//    return std::move(std::make_pair(std::move(header), std::move(html)));
+//}
 
-        header.push_back(line);
-    }
-    // remove any leading \r\n to the html.
-    while (i < s.curPos && (s.buf[i] == '\r' || s.buf[i] == '\n')) i++;
 
-    std::string html;
-    for (; i < s.curPos; i++) {
-        html += s.buf[i];
-    }
-    return std::move(std::make_pair(std::move(header), std::move(html)));
-}
-
-
-bool sendSocketRequest(Socket& s, const Url& url, bool robotCheck, int maxRead) {
-
-    if (url.scheme == "") return false;
-
-    bool connected = s.Connect(url, robotCheck);
-
-    if (!connected) return false;
-
-    int validSocketRead = s.Read(maxRead);
-
-    if (!validSocketRead) return false;
-
-    auto response = getParsedResponse(s);
-
-    std::string code;
-    if (response.first[0].length() >= 12) {
-        code = response.first[0].substr(9, 3);
-        std::cout << "\t  Verifying header... status code " << code << std::endl;
-    }
-    else {
-        std::cout << "\t  Verifying header... invalid header" << std::endl;
-        return false;
-    }
-
-    if (robotCheck) {
-        if (code[0] != '4') {
-            return false;
-        }
-        return true;
-    }
-    
-    if (code[0] != '2') {
-        return false;
-    }
-
-    // create new parser object
-    std::shared_ptr<HTMLParserBase> parser(new HTMLParserBase);
-
-    int nLinks;
-
-    clock_t start = clock();
-
-    const char* rawUrlCopy = url.rawUrl.c_str();
-
-    char* linkBuffer = parser->Parse((char*)response.second.c_str(), response.second.length(), (char*)rawUrlCopy, (int)strlen(rawUrlCopy), &nLinks);
-
-    // check for errors indicated by negative values
-    if (nLinks < 0)
-        nLinks = 0;
-
-    clock_t end = clock();
-
-    std::cout << "\t+ Parsing page... done in " << (double)(end - start) / CLOCKS_PER_SEC * 1000 << " ms with " << nLinks << " links" << std::endl;
-    /*std::cout << "----------------------------------------" << std::endl;
-    for (auto str : response.first) {
-        std::cout << str << std::endl;
-    }*/
-
-    return true;
-}
+//bool sendSocketRequest(Socket& s, const Url& url, bool robotCheck, int maxRead) {
+//
+//    if (url.scheme == "") return false;
+//
+//    bool connected = s.Connect(url, robotCheck);
+//
+//    if (!connected) return false;
+//
+//    int validSocketRead = s.Read(maxRead);
+//
+//    if (!validSocketRead) return false;
+//
+//    auto response = getParsedResponse(s);
+//
+//    std::string code;
+//    if (response.first[0].length() >= 12) {
+//        code = response.first[0].substr(9, 3);
+//        std::cout << "\t  Verifying header... status code " << code << std::endl;
+//    }
+//    else {
+//        std::cout << "\t  Verifying header... invalid header" << std::endl;
+//        return false;
+//    }
+//
+//    if (robotCheck) {
+//        if (code[0] != '4') {
+//            return false;
+//        }
+//        return true;
+//    }
+//    
+//    if (code[0] != '2') {
+//        return false;
+//    }
+//
+//    // create new parser object
+//    std::shared_ptr<HTMLParserBase> parser(new HTMLParserBase);
+//
+//    int nLinks;
+//
+//    clock_t start = clock();
+//
+//    const char* rawUrlCopy = url.rawUrl.c_str();
+//
+//    char* linkBuffer = parser->Parse((char*)response.second.c_str(), response.second.length(), (char*)rawUrlCopy, (int)strlen(rawUrlCopy), &nLinks);
+//
+//    // check for errors indicated by negative values
+//    if (nLinks < 0)
+//        nLinks = 0;
+//
+//    clock_t end = clock();
+//
+//    std::cout << "\t+ Parsing page... done in " << (double)(end - start) / CLOCKS_PER_SEC * 1000 << " ms with " << nLinks << " links" << std::endl;
+//
+//    return true;
+//}
 
 
 int main(int argc, char* argv[])
 {
-
-    
-
     if (argc != 3) {
         std::cout << "Usage: " << argv[0] << " <number of threads> <urls filename>" << std::endl;
         return 0;
@@ -142,28 +135,14 @@ int main(int argc, char* argv[])
         rawUrls.push_back(line);
     }
 
-    UrlParser p;
+    Crawler c(10);
 
-    std::unordered_set<std::string> uniqueHosts;
-    
-    {
-        Socket s(10);
-
-        for (const std::string& rawUrl : rawUrls) {
-
-            std::cout << "URL: " << rawUrl << std::endl;
-
-            Url url = p.parse(rawUrl);
-
-
-            if (sendSocketRequest(s, url, true, 16*1024)) {
-                // download the page request
-                s.Shutdown();
-                sendSocketRequest(s, url, false, 2097152);
-            }
-            s.Shutdown();
-        }
+    for (const std::string& s : rawUrls) {
+        c.insertJob(s);
     }
+
+    c.run();
+    
 
     WSACleanup();
 
