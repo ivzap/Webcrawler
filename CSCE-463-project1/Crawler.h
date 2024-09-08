@@ -5,6 +5,7 @@
 #include <mutex>
 #include <unordered_set>
 #include <atomic>
+#include <map>
 
 class Crawler {
 	
@@ -17,7 +18,7 @@ class Crawler {
 		void updateSeenIps(const std::string& ip);
 		bool seenHost(const std::string& host);
 		bool seenIp(const std::string& ip);
-		void getCrawlerStats();
+		void getCrawlerStats(std::vector<int>& );
 		void endStatsThread();
 		std::mutex jobsMtx;
 		int N;
@@ -28,6 +29,8 @@ class Crawler {
 		std::vector<std::thread> workers;
 		std::queue<std::string> Q;
 		// Stats
+		std::vector<int> bytesRead;
+		std::vector<int> pagesRead;
 		std::vector<int> extractedUrls;
 		std::vector<int> uniqueHostPassed;
 		std::vector<int> successfulDnsLookups;
@@ -35,6 +38,7 @@ class Crawler {
 		std::vector<int> robotsCheckPassed;
 		std::vector<int> successfulCrawl;
 		std::vector<int> linksFound;
+		std::map<std::string, std::vector<int>> httpCodes;
 		// Uniqueness
 		std::unordered_set<std::string> seenHosts;
 		std::unordered_set<std::string> seenIps;

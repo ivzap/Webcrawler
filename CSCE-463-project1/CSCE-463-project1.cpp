@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
         rawUrls.push_back(line);
     }
 
-    Crawler c(10);
+    Crawler c(5000);
 
     for (const std::string& s : rawUrls) {
         c.insertJob(s);

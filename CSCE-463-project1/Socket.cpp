@@ -33,7 +33,9 @@ bool Socket::Connect(const Url& url, bool robotCheck, const int id) {
 		if (newBuf == nullptr) {
 			return false;
 		}
-
+		curPos = 0;
+		memset(buf, '\0', INITIAL_BUF_SIZE * sizeof(char));
+		allocatedSize = INITIAL_BUF_SIZE;
 		buf = (char*)newBuf;
 
 	}
@@ -75,12 +77,17 @@ bool Socket::Connect(const Url& url, bool robotCheck, const int id) {
 		server.sin_addr.s_addr = ipv4;
 	}
 	else{
+		// TODO: only dns on robot to prevent doing it twice
 		struct hostent* host;
 		if ((host = (hostent*)gethostbyname(url.host.c_str())) == nullptr) {
 			
 			return false;
 		}
 		server.sin_addr = *((struct in_addr*)host->h_addr_list[0]);
+		if (robotCheck) {
+			std::unique_lock<std::mutex> lock(crawler->statsMtx);
+			crawler->successfulDnsLookups[id]++;
+		}
 	}
 
 	std::string ip = inet_ntoa(server.sin_addr);
@@ -91,24 +98,22 @@ bool Socket::Connect(const Url& url, bool robotCheck, const int id) {
 
 	double dnsElapsed = (double)(dnsEnd - dnsStart) / CLOCKS_PER_SEC;
 
-	if (robotCheck && crawler->seenIp(ip)) {
-		return false;
-	}
+
 	if (robotCheck) {
-		// ip uniqueness passed, update counter
+		std::unique_lock<std::mutex> lock(crawler->statsMtx);
+		if(crawler->seenIp(ip)) {
+			return false;
+		}
+		crawler->updateSeenIps(ip);
+		crawler->uniqueIpPassed[id]++;
 	}
 
-	//crawler->updateSeenIps(ip);
+
+	//
 
 	clock_t connStart = clock();
 
 	if (connect(sock, (struct sockaddr*)&server, sizeof(struct sockaddr_in)) == SOCKET_ERROR) {
-		if (robotCheck) {
-			// robot connection failed
-		}
-		else {
-			// regular connection failed
-		}
 		return false;
 	}
 
@@ -136,7 +141,7 @@ bool Socket::Connect(const Url& url, bool robotCheck, const int id) {
 
 }
 
-bool Socket::Read(int maxRead, const int id)
+bool Socket::Read(int maxRead, bool robotCheck, const int id)
 {
 	fd_set fds;
 
@@ -168,17 +173,26 @@ bool Socket::Read(int maxRead, const int id)
 				return false;
 			}
 			if (bytes == 0) {
+				
+				// TODO: increment ids pages parsed
 				buf[curPos] = '\0';
 				// verify valid http(HTTP/) response
 				if (strncmp(buf, "HTTP/", 5) != 0) {
 					return false;
 				}
+
+				if (!robotCheck)
+					crawler->pagesRead[id]++;
+				
 				return true; // normal completion
 			}
 			curPos += bytes; // adjust where the next recv goes
+			// TODO: adjust how many bytes process id has read by bytes
+			if(!robotCheck)
+				crawler->bytesRead[id] += bytes;
 			if (allocatedSize - curPos < THRESHHOLD) { // always require 1000 extra bytes, performance sensitive here!
 				void* newBuf = realloc(buf, allocatedSize + THRESHHOLD);
-				if (newBuf == nullptr) {
+				if (newBuf == nullptr){
 					return false; // RAII will free buffer
 				}
 				buf = (char*)newBuf;

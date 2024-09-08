@@ -38,7 +38,7 @@ bool sendSocketRequest(const int id, Socket& s, Crawler* c, std::shared_ptr<HTML
 
     if (!connected) return false;
 
-    int validSocketRead = s.Read(maxRead, id);
+    int validSocketRead = s.Read(maxRead, robotCheck, id);
 
     if (!validSocketRead) return false;
 
@@ -52,10 +52,28 @@ bool sendSocketRequest(const int id, Socket& s, Crawler* c, std::shared_ptr<HTML
         return false;
     }
 
+    // get code counts
+    if (code[0] == '5') {
+        c->httpCodes["5xx"][id]++;
+    }
+    else if (code[0] == '4') {
+        c->httpCodes["4xx"][id]++;
+    }
+    else if (code[0] == '3') {
+        c->httpCodes["3xx"][id]++;
+    }
+    else if (code[0] == '2') {
+        c->httpCodes["2xx"][id]++;
+    }
+    else {
+        c->httpCodes["other"][id]++;
+    }
+
     if (robotCheck) {
         if (code[0] != '4') {
             return false;
         }
+        c->robotsCheckPassed[id]++;
         return true;
     }
 
@@ -63,11 +81,7 @@ bool sendSocketRequest(const int id, Socket& s, Crawler* c, std::shared_ptr<HTML
         return false;
     }
 
-    // create new parser object
-
     int nLinks;
-
-    clock_t start = clock();
 
     const char* rawUrlCopy = url.rawUrl.c_str();
 
@@ -77,24 +91,50 @@ bool sendSocketRequest(const int id, Socket& s, Crawler* c, std::shared_ptr<HTML
     if (nLinks < 0)
         nLinks = 0;
 
-    clock_t end = clock();
+    c->linksFound[id] += nLinks;
 
     return true;
 }
 
 void Crawler::runStat() {
     statsThread = std::thread([this]() {
+        // TODO: if we have processed everything from Q, STOP thread
+        std::vector<int> prevPeriodValues(2, 0); // stores pages read, bytes read respectively
         while (!stopStatsThread) {
-            this->getCrawlerStats();
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            this->getCrawlerStats(prevPeriodValues);
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
         }
     });
 
 }
 
-void Crawler::getCrawlerStats() {
+/*
+Store a previous cnt array for both pages crawled and total bytes we crawled
+
+if we get a response back we consider it 
+
+*/
+void Crawler::getCrawlerStats(std::vector<int>& prevPeriodValues) {
     std::unique_lock<std::mutex> lock(statsMtx);
-    std::cout <<"Unique Hosts Passed: " << std::accumulate(uniqueHostPassed.begin(), uniqueHostPassed.end(), 0) << std::endl;
+    {
+        std::unique_lock<std::mutex> lock(jobsMtx);
+        std::cout << "Current size of pending queue: "
+            << Q.size()
+            << std::endl;
+    }
+
+    std::cout << "Number of extracted URLs from queue: "
+        << std::accumulate(extractedUrls.begin(), extractedUrls.end(), 0)
+        << std::endl;
+    std::cout <<"Number of URLs that have passed host uniqueness : " 
+        << std::accumulate(uniqueHostPassed.begin(), uniqueHostPassed.end(), 0)
+        << std::endl;
+    int totalPagesRead = std::accumulate(pagesRead.begin(), pagesRead.end(), 0);
+    int totalBytesRead = std::accumulate(bytesRead.begin(), bytesRead.end(), 0);
+    std::cout << (totalPagesRead - prevPeriodValues[0]) / 2 <<" pps, "
+        << (double)(totalBytesRead - prevPeriodValues[1])/2.0/1000000.0 << " Mbps" << std::endl;
+    prevPeriodValues[0] = totalPagesRead;
+    prevPeriodValues[1] = totalBytesRead;
 }
 
 void Crawler::insertJob(const std::string& rawUrl) {
@@ -125,6 +165,8 @@ void Crawler::endStatsThread() {
 // allows n number of threads to crawler
 Crawler::Crawler(int n) {
 	N = n;
+    bytesRead.resize(n);
+    pagesRead.resize(n);
     extractedUrls.resize(n);
     uniqueHostPassed.resize(n);
     successfulDnsLookups.resize(n);
@@ -133,6 +175,12 @@ Crawler::Crawler(int n) {
     successfulCrawl.resize(n);
     linksFound.resize(n);
     stopStatsThread.store(false);
+    httpCodes["2xx"] = std::vector<int>(n, 0);
+    httpCodes["3xx"] = std::vector<int>(n, 0);
+    httpCodes["4xx"] = std::vector<int>(n, 0);
+    httpCodes["5xx"] = std::vector<int>(n, 0);
+    httpCodes["other"] = std::vector<int>(n, 0);
+
 }
 
 // run all threads including stat thread and start crawling
@@ -154,7 +202,7 @@ void Crawler::run() {
                     }
 
                     rawUrl = Q.front(); Q.pop();
-
+                    this->extractedUrls[i]++;
                 }
                 // crawl on rawUrl
                 Url url = p.parse(rawUrl);
