@@ -1,3 +1,6 @@
+// Name: Ivan Zaplatar
+// Class: 464
+// Semester: Fall 2024
 #include "pch.h"
 #include "Url.h"
 #include "Crawler.h"
@@ -100,9 +103,11 @@ void Crawler::runStat() {
     statsThread = std::thread([this]() {
         // TODO: if we have processed everything from Q, STOP thread
         std::vector<int> prevPeriodValues(2, 0); // stores pages read, bytes read respectively
+        int t = 0;
         while (!stopStatsThread) {
-            this->getCrawlerStats(prevPeriodValues);
+            this->getCrawlerStats(prevPeriodValues, t);
             std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+            t += 2;
         }
     });
 
@@ -114,25 +119,28 @@ Store a previous cnt array for both pages crawled and total bytes we crawled
 if we get a response back we consider it 
 
 */
-void Crawler::getCrawlerStats(std::vector<int>& prevPeriodValues) {
+void Crawler::getCrawlerStats(std::vector<int>& prevPeriodValues, int time) {
+    int qSize;
     std::unique_lock<std::mutex> lock(statsMtx);
     {
         std::unique_lock<std::mutex> lock(jobsMtx);
-        std::cout << "Current size of pending queue: "
-            << Q.size()
-            << std::endl;
+        qSize = Q.size();
     }
-
-    std::cout << "Number of extracted URLs from queue: "
-        << std::accumulate(extractedUrls.begin(), extractedUrls.end(), 0)
-        << std::endl;
-    std::cout <<"Number of URLs that have passed host uniqueness : " 
-        << std::accumulate(uniqueHostPassed.begin(), uniqueHostPassed.end(), 0)
-        << std::endl;
+    
     int totalPagesRead = std::accumulate(pagesRead.begin(), pagesRead.end(), 0);
     int totalBytesRead = std::accumulate(bytesRead.begin(), bytesRead.end(), 0);
-    std::cout << (totalPagesRead - prevPeriodValues[0]) / 2 <<" pps, "
-        << (double)(totalBytesRead - prevPeriodValues[1])/2.0/1000000.0 << " Mbps" << std::endl;
+    
+    printf("[%3d] Q %6d E %7d H %6d D %6d I %5d R %5d C %5d L %4dK\n",
+        time,
+        qSize,
+        std::accumulate(extractedUrls.begin(), extractedUrls.end(), 0),
+        std::accumulate(uniqueHostPassed.begin(), uniqueHostPassed.end(), 0),
+        std::accumulate(successfulDnsLookups.begin(), successfulDnsLookups.end(), 0),
+        std::accumulate(uniqueIpPassed.begin(), uniqueIpPassed.end(), 0),
+        std::accumulate(robotsCheckPassed.begin(), robotsCheckPassed.end(), 0),
+        std::accumulate(pagesRead.begin(), pagesRead.end(), 0),
+        std::accumulate(linksFound.begin(), linksFound.end(), 0)/1000);
+    printf("      *** crawling %.1f pps @ %.1f Mbps\n", (totalPagesRead - prevPeriodValues[0])/2.0, (totalBytesRead - prevPeriodValues[1]) / 2.0 / 1000000.0);
     prevPeriodValues[0] = totalPagesRead;
     prevPeriodValues[1] = totalBytesRead;
 }

@@ -1,5 +1,5 @@
 // Name: Ivan Zaplatar
-// Class: 436
+// Class: 464
 // Semester: Fall 2024
 #include "pch.h"
 #include "Socket.h"
@@ -34,7 +34,7 @@ bool Socket::Connect(const Url& url, bool robotCheck, const int id) {
 			return false;
 		}
 		curPos = 0;
-		memset(buf, '\0', INITIAL_BUF_SIZE * sizeof(char));
+		//memset(buf, '\0', INITIAL_BUF_SIZE * sizeof(char));
 		allocatedSize = INITIAL_BUF_SIZE;
 		buf = (char*)newBuf;
 

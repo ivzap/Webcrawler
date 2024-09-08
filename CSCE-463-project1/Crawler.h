@@ -1,3 +1,6 @@
+// Name: Ivan Zaplatar
+// Class: 464
+// Semester: Fall 2024
 #pragma once
 #include <vector>
 #include <thread>
@@ -18,7 +21,7 @@ class Crawler {
 		void updateSeenIps(const std::string& ip);
 		bool seenHost(const std::string& host);
 		bool seenIp(const std::string& ip);
-		void getCrawlerStats(std::vector<int>& );
+		void getCrawlerStats(std::vector<int>& , int);
 		void endStatsThread();
 		std::mutex jobsMtx;
 		int N;
