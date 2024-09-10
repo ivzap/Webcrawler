@@ -148,8 +148,8 @@
   <ItemGroup>
     <Text Include="out.txt" />
     <Text Include="sol_out.txt" />
-    <Text Include="urls.txt" />
-    <Text Include="urls2.txt" />
+    <Text Include="1M-urls-2019.txt" />
+    <Text Include="1M-urls.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

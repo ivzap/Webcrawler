@@ -49,9 +49,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="urls.txt" />
+    <Text Include="1M-urls-2019.txt" />
     <Text Include="out.txt" />
     <Text Include="sol_out.txt" />
-    <Text Include="urls2.txt" />
+    <Text Include="1M-urls.txt" />
   </ItemGroup>
 </Project>

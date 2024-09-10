@@ -16,6 +16,10 @@
 class UrlParser {
 public:
 	Url parse(const std::string& rawUrl) {
+
+		if (rawUrl.length() > MAX_URL_LEN) {
+			return Url{ "", "", -1, "", "", "" };
+		}
 		
 		std::string rawUrlCpy = rawUrl;
 
@@ -75,6 +79,16 @@ public:
 			return Url{"", "", -1, "", "", "" };
 		}
 
+		// Verify max host len
+		if (urlElements[5].length() > MAX_HOST_LEN) {
+			return Url{ "", "", -1, "", "", "" };
+		}
+
+		// Verify max request len. request = path + query
+		if (urlElements[3].length() + urlElements[2].length() > MAX_REQUEST_LEN) {
+			return Url{ "", "", -1, "", "", "" };
+		}
+
 		// Construct the url with urlElements
 		Url url;
 
@@ -85,6 +99,8 @@ public:
 		url.path = urlElements[3].length() ? urlElements[3] : "/";
 		url.fragment = urlElements[1];
 		url.rawUrl = rawUrl;
+
+
 
 		return url;
 

@@ -152,8 +152,9 @@ void Crawler::getCrawlerStats(std::vector<int>& prevPeriodValues, int time) {
     int totalPagesRead = std::accumulate(pagesRead.begin(), pagesRead.end(), 0);
     int totalBytesRead = std::accumulate(bytesRead.begin(), bytesRead.end(), 0);
     
-    printf("[%3d] Q %6d E %7d H %6d D %6d I %5d R %5d C %5d L %4dK\n",
+    printf("[%3d] %d Q %6d E %7d H %6d D %6d I %5d R %5d C %5d L %4dK\n",
         time,
+        this->N,
         qSize,
         std::accumulate(extractedUrls.begin(), extractedUrls.end(), 0),
         std::accumulate(uniqueHostPassed.begin(), uniqueHostPassed.end(), 0),
