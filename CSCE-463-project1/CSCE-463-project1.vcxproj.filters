@@ -24,6 +24,9 @@
     <ClCompile Include="Socket.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Crawler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -41,10 +44,14 @@
     <ClInclude Include="HTMLParserBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Crawler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="urls.txt" />
     <Text Include="out.txt" />
     <Text Include="sol_out.txt" />
+    <Text Include="urls2.txt" />
   </ItemGroup>
 </Project>

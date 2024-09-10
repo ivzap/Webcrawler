@@ -22,8 +22,8 @@ public:
 	int curPos; // current position in buffer
 	int timeout;
 
-	bool Read(int maxRead, bool robotCheck, const int id);
-	bool Connect(const Url& url, bool robotCheck, const int id);
+	bool Read(struct sockaddr_in&, int maxRead, bool robotCheck, const int id);
+	bool Connect(struct sockaddr_in&, const Url& url, bool robotCheck, const int id);
 	void Shutdown();
 
 	private:

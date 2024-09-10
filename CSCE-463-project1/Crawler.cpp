@@ -33,15 +33,15 @@ std::pair<std::vector<std::string>, std::string> getParsedResponse(const Socket&
 }
 
 
-bool sendSocketRequest(const int id, Socket& s, Crawler* c, std::shared_ptr<HTMLParserBase> parser, const Url& url, bool robotCheck, int maxRead) {
+bool sendSocketRequest(struct sockaddr_in& server, const int id, Socket& s, Crawler* c, std::shared_ptr<HTMLParserBase> parser, const Url& url, bool robotCheck, int maxRead) {
 
     if (url.scheme == "") return false;
 
-    bool connected = s.Connect(url, robotCheck, id);
+    bool connected = s.Connect(server, url, robotCheck, id);
 
     if (!connected) return false;
 
-    int validSocketRead = s.Read(maxRead, robotCheck, id);
+    int validSocketRead = s.Read(server, maxRead, robotCheck, id);
 
     if (!validSocketRead) return false;
 
@@ -112,6 +112,28 @@ void Crawler::runStat() {
     });
 
 }
+// elapsed time in seconds
+void Crawler::getSummaryStats(double elapsedTime) {
+    std::unique_lock<std::mutex> lock(statsMtx);
+    long long int nExtractedUrls = accumulate(extractedUrls.begin(), extractedUrls.end(), 0);
+    long long int nDns = accumulate(dnsLookups.begin(), dnsLookups.end(), 0);
+    long long int nSiteRobots = accumulate(uniqueIpPassed.begin(), uniqueIpPassed.end(), 0);
+    long long int nCrawled = accumulate(pagesRead.begin(), pagesRead.end(), 0);
+    long long int nParsed = accumulate(linksFound.begin(), linksFound.end(), 0);
+    double crawledDataMB = accumulate(bytesRead.begin(), bytesRead.end(), 0.0) / 1000000.0;
+    std::map<std::string, int> codes;
+    for (auto [code, threadSums] : httpCodes) {
+        codes[code] = accumulate(threadSums.begin(), threadSums.end(), 0);
+    }
+    printf("Extracted %ld URLs @ %ld/s\n",
+        nExtractedUrls, (long long int)(nExtractedUrls / elapsedTime));
+    printf("Looked up %ld DNS names @ %ld/s\n", nDns, (long long int)(nDns / elapsedTime));
+    printf("Attempted %ld site robots @ %ld/s\n", nSiteRobots, (long long int)(nSiteRobots / elapsedTime));
+    printf("Crawled %ld pages @ %ld/s (%.2f MB)\n", nCrawled, (long long int)(nCrawled / elapsedTime), crawledDataMB);
+    printf("Parsed %ld links @ %ld/s\n", nParsed, (long long int)(nParsed / elapsedTime));
+    printf("HTTP codes: 2xx = %d, 3xx = %d, 4xx = %d, 5xx = %d, other = %d\n",
+        codes["2xx"], codes["3xx"], codes["4xx"], codes["5xx"], codes["other"]);
+}
 
 /*
 Store a previous cnt array for both pages crawled and total bytes we crawled
@@ -150,8 +172,8 @@ void Crawler::insertJob(const std::string& rawUrl) {
 }
 
 
-void Crawler::updateSeenIps(const std::string& ip) {
-    this->seenIps.insert(ip);
+void Crawler::updateSeenIps(DWORD ip) {
+    this->ips.insert(ip);
 }
 
 void Crawler::updateSeenHosts(const std::string& host) {
@@ -162,12 +184,14 @@ bool Crawler::seenHost(const std::string& host) {
     return this->seenHosts.contains(host);
 }
 
-bool Crawler::seenIp(const std::string& ip) {
-    return this->seenHosts.contains(ip);
+bool Crawler::seenIp(DWORD ip) {
+    return this->ips.contains(ip);
 }
 
-void Crawler::endStatsThread() {
+void Crawler::endStatsThread(double elapsedTime) {
     stopStatsThread.store(true);
+
+    getSummaryStats(elapsedTime);
 }
 
 // allows n number of threads to crawler
@@ -182,6 +206,8 @@ Crawler::Crawler(int n) {
     robotsCheckPassed.resize(n);
     successfulCrawl.resize(n);
     linksFound.resize(n);
+    dnsLookups.resize(n);
+    robotsAttempted.resize(n);
     stopStatsThread.store(false);
     httpCodes["2xx"] = std::vector<int>(n, 0);
     httpCodes["3xx"] = std::vector<int>(n, 0);
@@ -194,6 +220,7 @@ Crawler::Crawler(int n) {
 // run all threads including stat thread and start crawling
 void Crawler::run() {
     this->runStat();
+    clock_t start = clock();
 	for (int i = 0; i < N; i++) {
 		workers.emplace_back([this, i]() {
 			UrlParser p;
@@ -215,10 +242,60 @@ void Crawler::run() {
                 // crawl on rawUrl
                 Url url = p.parse(rawUrl);
 
-                if (sendSocketRequest(i, s, this, parser, url, true, 16 * 1024)) {
+                {
+                    std::unique_lock<std::mutex> lock(this->statsMtx);
+                    if (this->seenHost(url.host)) {
+                        continue;
+                    }
+                    this->updateSeenHosts(url.host);
+                    this->uniqueHostPassed[i]++;
+                }
+
+                // get ip
+                struct sockaddr_in server;
+                memset(&server, 0, sizeof(server));
+
+                server.sin_family = AF_INET; // IPv4
+
+                unsigned long ipv4 = inet_addr(url.host.c_str());
+
+                if (ipv4 != INADDR_NONE) {
+                    // its actually a ip address
+                    // have we already seen it?
+                    server.sin_addr.s_addr = ipv4;
+                }
+                else {
+                    // we need to find the ip via dns request
+                    struct hostent* host;
+                    this->dnsLookups[i]++;
+                    if ((host = (hostent*)gethostbyname(url.host.c_str())) == nullptr) {
+                        // failed dns request
+                        continue;
+                    }
+                    server.sin_addr = *((struct in_addr*)host->h_addr_list[0]);
+                    this->successfulDnsLookups[i]++;
+                }
+
+                ipv4 = server.sin_addr.s_addr;
+
+                server.sin_port = htons(url.port);
+                {
+                    std::unique_lock<std::mutex> lock(this->statsMtx);
+
+                    if (ips.contains(ipv4)) {
+                        // failed ip uniqueness test
+                        continue;
+                    }
+                    else {
+                        ips.insert(ipv4);
+                        this->uniqueIpPassed[i]++;
+                    }
+                }
+
+                if (sendSocketRequest(server, i, s, this, parser, url, true, 16 * 1024)) {
                     // download the page request
                     s.Shutdown();
-                    sendSocketRequest(i, s, this, parser, url, false, 2097152);
+                    sendSocketRequest(server, i, s, this, parser, url, false, 2097152);
                 }
                 s.Shutdown();
                 
@@ -233,7 +310,8 @@ void Crawler::run() {
     }
 
     // wait for our stats thread to finish
-    this->endStatsThread();
+    double elapsedTime = double(clock() - start) / CLOCKS_PER_SEC;
+    this->endStatsThread(elapsedTime);
     this->statsThread.join();
 
 }

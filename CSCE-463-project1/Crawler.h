@@ -9,6 +9,8 @@
 #include <unordered_set>
 #include <atomic>
 #include <map>
+#include <unordered_map>
+#include <set>
 
 class Crawler {
 	
@@ -18,11 +20,12 @@ class Crawler {
 		void run();// starts N threads
 		void runStat(); // starts the stat thread
 		void updateSeenHosts(const std::string& host);
-		void updateSeenIps(const std::string& ip);
+		void updateSeenIps(DWORD ip);
 		bool seenHost(const std::string& host);
-		bool seenIp(const std::string& ip);
+		bool seenIp(DWORD ip);
 		void getCrawlerStats(std::vector<int>& , int);
-		void endStatsThread();
+		void endStatsThread(double);
+		void getSummaryStats(double);
 		std::mutex jobsMtx;
 		int N;
 
@@ -39,12 +42,14 @@ class Crawler {
 		std::vector<int> successfulDnsLookups;
 		std::vector<int> uniqueIpPassed;
 		std::vector<int> robotsCheckPassed;
+		std::vector<int> robotsAttempted;
 		std::vector<int> successfulCrawl;
 		std::vector<int> linksFound;
+		std::vector<int> dnsLookups;
 		std::map<std::string, std::vector<int>> httpCodes;
 		// Uniqueness
+		std::set<DWORD> ips;
 		std::unordered_set<std::string> seenHosts;
-		std::unordered_set<std::string> seenIps;
 
 
 
