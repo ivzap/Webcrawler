@@ -35,8 +35,6 @@ std::pair<std::vector<std::string>, std::string> getParsedResponse(const Socket&
 
 bool sendSocketRequest(struct sockaddr_in& server, const int id, Socket& s, Crawler* c, std::shared_ptr<HTMLParserBase> parser, const Url& url, bool robotCheck, int maxRead) {
 
-    if (url.scheme == "") return false;
-
     bool connected = s.Connect(server, url, robotCheck, id);
 
     if (!connected) return false;
@@ -52,7 +50,16 @@ bool sendSocketRequest(struct sockaddr_in& server, const int id, Socket& s, Craw
         code = response.first[0].substr(9, 3);
     }
     else {
+
         return false;
+    }
+
+    if (robotCheck) {
+        if (code[0] != '4') {
+            return false;
+        }
+        c->robotsCheckPassed[id]++;
+        return true;
     }
 
     // get code counts
@@ -70,14 +77,6 @@ bool sendSocketRequest(struct sockaddr_in& server, const int id, Socket& s, Craw
     }
     else {
         c->httpCodes["other"][id]++;
-    }
-
-    if (robotCheck) {
-        if (code[0] != '4') {
-            return false;
-        }
-        c->robotsCheckPassed[id]++;
-        return true;
     }
 
     if (code[0] != '2') {
@@ -117,13 +116,14 @@ void Crawler::getSummaryStats(double elapsedTime) {
     std::unique_lock<std::mutex> lock(statsMtx);
     long long int nExtractedUrls = accumulate(extractedUrls.begin(), extractedUrls.end(), 0);
     long long int nDns = accumulate(dnsLookups.begin(), dnsLookups.end(), 0);
-    long long int nSiteRobots = accumulate(uniqueIpPassed.begin(), uniqueIpPassed.end(), 0);
-    long long int nCrawled = accumulate(pagesRead.begin(), pagesRead.end(), 0);
+    long long int nSiteRobots = accumulate(robotsAttempted.begin(), robotsAttempted.end(), 0);
+    long long int nCrawled = 0;
     long long int nParsed = accumulate(linksFound.begin(), linksFound.end(), 0);
     double crawledDataMB = accumulate(bytesRead.begin(), bytesRead.end(), 0.0) / 1000000.0;
     std::map<std::string, int> codes;
     for (auto [code, threadSums] : httpCodes) {
         codes[code] = accumulate(threadSums.begin(), threadSums.end(), 0);
+        nCrawled += codes[code];
     }
     printf("Extracted %ld URLs @ %ld/s\n",
         nExtractedUrls, (long long int)(nExtractedUrls / elapsedTime));
@@ -160,7 +160,7 @@ void Crawler::getCrawlerStats(std::vector<int>& prevPeriodValues, int time) {
         std::accumulate(successfulDnsLookups.begin(), successfulDnsLookups.end(), 0),
         std::accumulate(uniqueIpPassed.begin(), uniqueIpPassed.end(), 0),
         std::accumulate(robotsCheckPassed.begin(), robotsCheckPassed.end(), 0),
-        std::accumulate(pagesRead.begin(), pagesRead.end(), 0),
+        totalPagesRead,
         std::accumulate(linksFound.begin(), linksFound.end(), 0)/1000);
     printf("      *** crawling %.1f pps @ %.1f Mbps\n", (totalPagesRead - prevPeriodValues[0])/2.0, (totalBytesRead - prevPeriodValues[1]) / 2.0 / 1000000.0);
     prevPeriodValues[0] = totalPagesRead;
@@ -241,6 +241,8 @@ void Crawler::run() {
                 }
                 // crawl on rawUrl
                 Url url = p.parse(rawUrl);
+                
+                if (url.scheme == "") return false;
 
                 {
                     std::unique_lock<std::mutex> lock(this->statsMtx);
@@ -291,6 +293,9 @@ void Crawler::run() {
                         this->uniqueIpPassed[i]++;
                     }
                 }
+
+
+                this->robotsAttempted[i]++;
 
                 if (sendSocketRequest(server, i, s, this, parser, url, true, 16 * 1024)) {
                     // download the page request

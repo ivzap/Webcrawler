@@ -47,7 +47,6 @@ bool Socket::Connect(struct sockaddr_in& server, const Url& url, bool robotCheck
 		return false;
 	}
 
-
 	if (connect(sock, (struct sockaddr*)&server, sizeof(struct sockaddr_in)) == SOCKET_ERROR) {
 		return false;
 	}
@@ -69,9 +68,6 @@ bool Socket::Connect(struct sockaddr_in& server, const Url& url, bool robotCheck
 bool Socket::Read(struct sockaddr_in& server, int maxRead, bool robotCheck, const int id)
 {
 	fd_set fds;
-	if (robotCheck) {
-		crawler->robotsAttempted[id]++;
-	}
 	timeval timeout;
 	timeout.tv_sec = this->timeout;
 	timeout.tv_usec = 0;
