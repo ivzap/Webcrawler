@@ -62,6 +62,7 @@ int main(int argc, char* argv[])
 
     c.run();
     
+    //std::cout << "Tamu Links Found: " << c.getTamuLinkCount() << std::endl;
 
     WSACleanup();
 

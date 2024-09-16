@@ -26,6 +26,7 @@ class Crawler {
 		void getCrawlerStats(std::vector<int>& , int);
 		void endStatsThread(double);
 		void getSummaryStats(double);
+		int getTamuLinkCount();
 		std::mutex jobsMtx;
 		int N;
 
@@ -46,6 +47,7 @@ class Crawler {
 		std::vector<int> successfulCrawl;
 		std::vector<int> linksFound;
 		std::vector<int> dnsLookups;
+		std::vector<int> tamuLinks;
 		std::map<std::string, std::vector<int>> httpCodes;
 		// Uniqueness
 		std::set<DWORD> ips;

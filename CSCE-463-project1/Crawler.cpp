@@ -33,7 +33,7 @@ std::pair<std::vector<std::string>, std::string> getParsedResponse(const Socket&
 }
 
 
-bool sendSocketRequest(struct sockaddr_in& server, const int id, Socket& s, Crawler* c, std::shared_ptr<HTMLParserBase> parser, const Url& url, bool robotCheck, int maxRead) {
+bool sendSocketRequest(struct sockaddr_in& server, const int id, Socket& s, Crawler* c, std::shared_ptr<HTMLParserBase> parser, const Url& url, bool robotCheck, int maxRead, UrlParser* urlParser) {
 
     bool connected = s.Connect(server, url, robotCheck, id);
 
@@ -92,6 +92,29 @@ bool sendSocketRequest(struct sockaddr_in& server, const int id, Socket& s, Craw
     // check for errors indicated by negative values
     if (nLinks < 0)
         nLinks = 0;
+
+    int tamuLinks = 0;
+    // count tamu.edu urls.
+    for (int i = 0; i < nLinks; i++) {
+        std::string linkUrl = std::string(linkBuffer); // grab bytes up to null char
+        std::stringstream parsedLinkUrl(urlParser->parse(linkUrl).host); // parse the host
+        std::vector<std::string> hostParts;
+        std::string part;
+        while (std::getline(parsedLinkUrl, part, '.')) {
+            hostParts.push_back(part);
+        }
+        // confirm xxx.tamu.edu in hostname
+        if (hostParts.size() >= 2) {
+            if (hostParts[hostParts.size() - 2] == "tamu" && hostParts[hostParts.size() - 1] == "edu") {
+                tamuLinks++;
+            }
+        }
+
+        linkBuffer += linkUrl.length() + 1; // +1 abc\0\def
+
+    }
+
+    c->tamuLinks[id] += tamuLinks;
 
     c->linksFound[id] += nLinks;
 
@@ -168,6 +191,10 @@ void Crawler::getCrawlerStats(std::vector<int>& prevPeriodValues, int time) {
     prevPeriodValues[1] = totalBytesRead;
 }
 
+int Crawler::getTamuLinkCount() {
+    return std::accumulate(tamuLinks.begin(), tamuLinks.end(), 0);
+}
+
 void Crawler::insertJob(const std::string& rawUrl) {
     Q.push(rawUrl);
 }
@@ -209,6 +236,7 @@ Crawler::Crawler(int n) {
     linksFound.resize(n);
     dnsLookups.resize(n);
     robotsAttempted.resize(n);
+    tamuLinks.resize(n);
     stopStatsThread.store(false);
     httpCodes["2xx"] = std::vector<int>(n, 0);
     httpCodes["3xx"] = std::vector<int>(n, 0);
@@ -298,10 +326,10 @@ void Crawler::run() {
 
                 this->robotsAttempted[i]++;
 
-                if (sendSocketRequest(server, i, s, this, parser, url, true, 16 * 1024)) {
+                if (sendSocketRequest(server, i, s, this, parser, url, true, 16 * 1024, &p)) {
                     // download the page request
                     s.Shutdown();
-                    sendSocketRequest(server, i, s, this, parser, url, false, 2097152);
+                    sendSocketRequest(server, i, s, this, parser, url, false, 2097152, &p);
                 }
                 s.Shutdown();
                 
