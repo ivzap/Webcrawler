@@ -31,6 +31,7 @@ class Crawler {
 		int N;
 
 		std::mutex statsMtx;
+		std::mutex seenTamuHostsMtx;
 		std::thread statsThread;
 		std::atomic<bool> stopStatsThread;
 		std::vector<std::thread> workers;
@@ -48,6 +49,7 @@ class Crawler {
 		std::vector<int> linksFound;
 		std::vector<int> dnsLookups;
 		std::vector<int> tamuLinks;
+		std::set<std::string> seenTamuHosts;
 		std::map<std::string, std::vector<int>> httpCodes;
 		// Uniqueness
 		std::set<DWORD> ips;

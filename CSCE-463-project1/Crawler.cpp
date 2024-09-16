@@ -94,10 +94,13 @@ bool sendSocketRequest(struct sockaddr_in& server, const int id, Socket& s, Craw
         nLinks = 0;
 
     int tamuLinks = 0;
+    std::unique_lock lock{ c->seenTamuHostsMtx };
     // count tamu.edu urls.
     for (int i = 0; i < nLinks; i++) {
         std::string linkUrl = std::string(linkBuffer); // grab bytes up to null char
-        std::stringstream parsedLinkUrl(urlParser->parse(linkUrl).host); // parse the host
+        std::string linkHost = urlParser->parse(linkUrl).host;
+        std::stringstream parsedLinkUrl(linkHost); // parse the host
+
         std::vector<std::string> hostParts;
         std::string part;
         while (std::getline(parsedLinkUrl, part, '.')) {
@@ -106,7 +109,9 @@ bool sendSocketRequest(struct sockaddr_in& server, const int id, Socket& s, Craw
         // confirm xxx.tamu.edu in hostname
         if (hostParts.size() >= 2) {
             if (hostParts[hostParts.size() - 2] == "tamu" && hostParts[hostParts.size() - 1] == "edu") {
+                c->seenTamuHosts.insert(url.rawUrl);
                 tamuLinks++;
+                break;
             }
         }
 
