@@ -147,7 +147,7 @@ void Crawler::getSummaryStats(double elapsedTime) {
     long long int nSiteRobots = accumulate(robotsAttempted.begin(), robotsAttempted.end(), 0);
     long long int nCrawled = 0;
     long long int nParsed = accumulate(linksFound.begin(), linksFound.end(), 0);
-    double crawledDataMB = accumulate(bytesRead.begin(), bytesRead.end(), 0.0) / 1000000.0;
+    double crawledDataMB = accumulate(bytesRead.begin(), bytesRead.end(), 0.0) / (1024*1024);
     std::map<std::string, int> codes;
     for (auto [code, threadSums] : httpCodes) {
         codes[code] = accumulate(threadSums.begin(), threadSums.end(), 0);
@@ -191,7 +191,7 @@ void Crawler::getCrawlerStats(std::vector<int>& prevPeriodValues, int time) {
         std::accumulate(robotsCheckPassed.begin(), robotsCheckPassed.end(), 0),
         totalPagesRead,
         std::accumulate(linksFound.begin(), linksFound.end(), 0)/1000);
-    printf("      *** crawling %.1f pps @ %.1f Mbps\n", (totalPagesRead - prevPeriodValues[0])/2.0, (totalBytesRead - prevPeriodValues[1]) / 2.0 / 1000000.0);
+    printf("      *** crawling %.1f pps @ %.1f Mbps\n", (totalPagesRead - prevPeriodValues[0])/2.0, ((totalBytesRead - prevPeriodValues[1]) * 8) / 2.0 / 1000000.0);
     prevPeriodValues[0] = totalPagesRead;
     prevPeriodValues[1] = totalBytesRead;
 }
